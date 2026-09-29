@@ -3,7 +3,7 @@
 
 local ADDON_NAME, ns = ...
 local Health = ns.Health
-local TITLE = "Healer Plates"
+local TITLE = "Deficit Plates"
 local TAG = "|cff33ccff" .. TITLE .. ":|r "
 
 -- Our text per Blizzard UnitFrame. Weak keys: Blizzard owns the frames and
@@ -62,8 +62,8 @@ eventFrame:SetScript("OnEvent", function(_, event, ...)
     if event == "ADDON_LOADED" then
         if (...) ~= ADDON_NAME then return end
         eventFrame:UnregisterEvent("ADDON_LOADED")
-        HealerPlatesDB = HealerPlatesDB or {}
-        settings = HealerPlatesDB
+        DeficitPlatesDB = DeficitPlatesDB or {}
+        settings = DeficitPlatesDB
         if settings.enabled == nil then settings.enabled = true end
         if settings.enabled then
             running = true
@@ -99,10 +99,10 @@ end
 
 local function Help()
     Say("commands")
-    print("  /hp-help - show this list")
-    print("  /hp-status - show what the addon found on this client")
-    print("  /hp-on - show missing health on friendly plates (after /reload)")
-    print("  /hp-off - leave Blizzard's nameplates alone (after /reload)")
+    print("  /dp-help - show this list")
+    print("  /dp-status - show what the addon found on this client")
+    print("  /dp-on - show missing health on friendly plates (after /reload)")
+    print("  /dp-off - leave Blizzard's nameplates alone (after /reload)")
 end
 
 local function Status()
@@ -134,11 +134,11 @@ local function Switch(on)
     end
 end
 
-SLASH_HPHELP1 = "/hp-help"
-SlashCmdList.HPHELP = Help
-SLASH_HPSTATUS1 = "/hp-status"
-SlashCmdList.HPSTATUS = Status
-SLASH_HPON1 = "/hp-on"
-SlashCmdList.HPON = Switch(true)
-SLASH_HPOFF1 = "/hp-off"
-SlashCmdList.HPOFF = Switch(false)
+SLASH_DPHELP1 = "/dp-help"
+SlashCmdList.DPHELP = Help
+SLASH_DPSTATUS1 = "/dp-status"
+SlashCmdList.DPSTATUS = Status
+SLASH_DPON1 = "/dp-on"
+SlashCmdList.DPON = Switch(true)
+SLASH_DPOFF1 = "/dp-off"
+SlashCmdList.DPOFF = Switch(false)

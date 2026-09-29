@@ -1,11 +1,11 @@
-# Healer Plates: design
+# Deficit Plates: design
 
 Date: 2026-09-28
 Status: approved; revised 2026-09-29 after in-game testing (see "Revision")
 
 ## Goal
 
-A World of Warcraft: Forever addon for healers: friendly nameplates show **missing health** (for example `-118`, and `-0` at full health) in place of Blizzard's health number. Nothing else on any plate changes. It replaces Plater, which has too many settings and is buggy on Forever. It is a sibling of Dynamic Display Nameplate (DDN) and published on CurseForge. It does not depend on DDN: DDN decides when plates show, and Healer Plates adds missing health to friendly ones.
+A World of Warcraft: Forever addon for healers: friendly nameplates show **missing health** (for example `-118`, and `-0` at full health) in place of Blizzard's health number. Nothing else on any plate changes. It replaces Plater, which has too many settings and is buggy on Forever. It is a sibling of Dynamic Display Nameplate (DDN) and published on CurseForge. It does not depend on DDN: DDN decides when plates show, and Deficit Plates adds missing health to friendly ones.
 
 ## Revision (2026-09-29)
 
@@ -15,7 +15,7 @@ The first build restyled Blizzard's plates in Plater's default look (flat bars, 
 
 - WoW Forever only: the retail 12.x engine, TOC `## Interface: 16001`. The local beta client is at `/Applications/World of Warcraft/_classic_beta_/`.
 - CurseForge flavor: Forever. First release `v0.1.0-beta1` (release type: beta), uploaded by hand.
-- Repo: `~/HealerPlates`, published under the personal GitHub account (`rubens-lopes`).
+- Repo: `~/DeficitPlates`, published under the personal GitHub account (`rubens-lopes`).
 
 ## What the client allows (probe results, 2026-09-28)
 
@@ -57,7 +57,7 @@ The TOC loads `Health.lua`, then `Core.lua`. They share one addon namespace tabl
 
 ### Events
 
-- `ADDON_LOADED` (own name): load `HealerPlatesDB`, defaulting `enabled = true`. If disabled, register nothing else.
+- `ADDON_LOADED` (own name): load `DeficitPlatesDB`, defaulting `enabled = true`. If disabled, register nothing else.
 - `NAME_PLATE_UNIT_ADDED(unit)`: look up the plate, skip forbidden ones, remember it, and refresh it.
 - `NAME_PLATE_UNIT_REMOVED(unit)`: forget the unit.
 - `UNIT_HEALTH`, `UNIT_MAXHEALTH`, `UNIT_FACTION` (shown plates only): refresh.
@@ -74,14 +74,14 @@ Refresh: if the unit is a friend and the plate has no text of ours yet, create i
 
 ## Settings and commands
 
-- `## SavedVariables: HealerPlatesDB`, with one field: `enabled` (default `true`).
-- `/hp-help` lists commands.
-- `/hp-status` prints enabled state, how many friendly plates carry our text, and whether `UnitHealthMissing` and `AbbreviateNumbers` exist.
-- `/hp-on` and `/hp-off` set `enabled`, then print "Type /reload to apply."
+- `## SavedVariables: DeficitPlatesDB`, with one field: `enabled` (default `true`).
+- `/dp-help` lists commands.
+- `/dp-status` prints enabled state, how many friendly plates carry our text, and whether `UnitHealthMissing` and `AbbreviateNumbers` exist.
+- `/dp-on` and `/dp-off` set `enabled`, then print "Type /reload to apply."
 
 ## Error handling
 
-Each refresh runs in `pcall`. On failure, print one chat line per session: `Healer Plates: couldn't show missing health (<error>)`. Never let the error reach the frame.
+Each refresh runs in `pcall`. On failure, print one chat line per session: `Deficit Plates: couldn't show missing health (<error>)`. Never let the error reach the frame.
 
 ## Testing
 
@@ -93,11 +93,11 @@ Each refresh runs in `pcall`. On failure, print one chat line per session: `Heal
 - **Cases:** friendly text and hidden Blizzard texts; font and anchor; nothing else touched; enemies untouched; plate reuse both ways; events; faction change; forbidden plates; secret friendliness; missing children; one warning per failure; commands.
 - **Lint:** luacheck with `std = "lua51"`.
 
-**Manual in-game checklist before tagging:** friendly plates show `-X` (and `-0` at full health) where Blizzard's number was; enemy plates look exactly like Blizzard's; no Lua errors in a 5-minute session; `/hp-off` plus `/reload` gives back Blizzard's number.
+**Manual in-game checklist before tagging:** friendly plates show `-X` (and `-0` at full health) where Blizzard's number was; enemy plates look exactly like Blizzard's; no Lua errors in a 5-minute session; `/dp-off` plus `/reload` gives back Blizzard's number.
 
 ## Release
 
-The same pipeline as DDN: `.pkgmeta`, CI running tests and luacheck, and a tag `vX.Y.Z` that runs the BigWigs packager and attaches `hp-<version>.zip` to a GitHub Release (tags with `beta` or `alpha` become pre-releases). Upload that zip to CurseForge by hand. `docs/curseforge.md` holds the page text and `media/` the logo. `README.md` and `CHANGELOG.md` follow DDN's format.
+The same pipeline as DDN: `.pkgmeta`, CI running tests and luacheck, and a tag `vX.Y.Z` that runs the BigWigs packager and attaches `dp-<version>.zip` to a GitHub Release (tags with `beta` or `alpha` become pre-releases). Upload that zip to CurseForge by hand. `docs/curseforge.md` holds the page text and `media/` the logo. `README.md` and `CHANGELOG.md` follow DDN's format.
 
 ## Out of scope for v1
 

@@ -1,4 +1,4 @@
--- Healer Plates unit tests. Run from the repo root: luajit tests/test_addon.lua
+-- Deficit Plates unit tests. Run from the repo root: luajit tests/test_addon.lua
 package.path = "tests/?.lua;" .. package.path
 local T = require("harness")
 local Load, eq = T.Load, T.eq
@@ -39,7 +39,7 @@ test("defines only its saved variable and slash commands as globals", function()
     local env = Load()
     local names = {}
     for k in pairs(env.globals) do
-        if not env.stubs[k] and k ~= "HealerPlatesDB" and not k:match("^SLASH_HP") then
+        if not env.stubs[k] and k ~= "DeficitPlatesDB" and not k:match("^SLASH_DP") then
             names[#names + 1] = k
         end
     end
@@ -125,7 +125,7 @@ test("registers only the events it needs when enabled (the default)", function()
     for _, event in ipairs(want) do eq(env.frame.events[event], true, event) end
     eq(n, #want, "events registered")
     eq(next(env.hooked), nil, "no hooks")
-    eq(env.globals.HealerPlatesDB.enabled, true, "saved default")
+    eq(env.globals.DeficitPlatesDB.enabled, true, "saved default")
 end)
 
 test("a saved off setting registers nothing", function()
@@ -193,7 +193,7 @@ test("a failing update prints one line and never raises", function()
     env.show("nameplate2", FRIEND)
     env.fire("UNIT_HEALTH", "nameplate1")
     eq(#env.printed, 1, "warnings printed")
-    assert(env.printed[1]:find("Healer Plates:", 1, true), env.printed[1])
+    assert(env.printed[1]:find("Deficit Plates:", 1, true), env.printed[1])
     assert(env.printed[1]:find("couldn't show missing health", 1, true), env.printed[1])
 end)
 
@@ -208,34 +208,34 @@ end)
 
 -- Commands --------------------------------------------------------------------
 
-test("every slash command uses the /hp- prefix", function()
+test("every slash command uses the /dp- prefix", function()
     local env = Load()
     local n = 0
     for k, v in pairs(env.globals) do
         if type(k) == "string" and k:match("^SLASH_") then
             n = n + 1
-            assert(v:match("^/hp%-%l+$"), k .. " = " .. v)
+            assert(v:match("^/dp%-%l+$"), k .. " = " .. v)
         end
     end
     eq(n, 4, "slash commands")
 end)
 
-test("/hp-off and /hp-on save the setting and ask for a reload", function()
+test("/dp-off and /dp-on save the setting and ask for a reload", function()
     local env = Load()
-    env.slash("/hp-off")
-    eq(env.globals.HealerPlatesDB.enabled, false, "off")
+    env.slash("/dp-off")
+    eq(env.globals.DeficitPlatesDB.enabled, false, "off")
     assert(env.printed[#env.printed]:find("Type /reload to apply.", 1, true), env.printed[#env.printed])
-    env.slash("/hp-on")
-    eq(env.globals.HealerPlatesDB.enabled, true, "on")
+    env.slash("/dp-on")
+    eq(env.globals.DeficitPlatesDB.enabled, true, "on")
     assert(env.printed[#env.printed]:find("turned on", 1, true), env.printed[#env.printed])
 end)
 
-test("/hp-status reports what the addon found on this client", function()
+test("/dp-status reports what the addon found on this client", function()
     local env = Load({ remove = { "AbbreviateNumbers" } })
     env.show("nameplate1", FRIEND)
     env.show("nameplate2", ENEMY)
     env.printed = {}
-    env.slash("/hp-status")
+    env.slash("/dp-status")
     local out = table.concat(env.printed, "\n")
     for _, want in ipairs({
         "running (saved setting: on)",
@@ -246,14 +246,14 @@ test("/hp-status reports what the addon found on this client", function()
     end
 end)
 
-test("/hp-status lists each shown plate and the last error", function()
+test("/dp-status lists each shown plate and the last error", function()
     local env = Load()
     env.show("nameplate1", FRIEND)
     env.show("nameplate2", ENEMY)
     env.show("nameplate3", FRIEND, T.Plate())
     env.hide("nameplate3")
     env.printed = {}
-    env.slash("/hp-status")
+    env.slash("/dp-status")
     local out = table.concat(env.printed, "\n")
     for _, want in ipairs({
         "nameplate1: friend, ours shown, Blizzard's hidden",
@@ -267,22 +267,22 @@ test("/hp-status lists each shown plate and the last error", function()
     local broken = Load({ remove = { "UnitHealthMissing" } })
     broken.show("nameplate1", FRIEND)
     broken.printed = {}
-    broken.slash("/hp-status")
+    broken.slash("/dp-status")
     out = table.concat(broken.printed, "\n")
     assert(out:find("last error: couldn't show missing health (", 1, true), out)
 end)
 
-test("/hp-status when turned off", function()
+test("/dp-status when turned off", function()
     local env = Load({ saved = { enabled = false } })
-    env.slash("/hp-status")
+    env.slash("/dp-status")
     local out = table.concat(env.printed, "\n")
     assert(out:find("not running (saved setting: off)", 1, true), out)
     assert(out:find("friendly plates with missing health: 0", 1, true), out)
 end)
 
-test("/hp-help lists every command", function()
+test("/dp-help lists every command", function()
     local env = Load()
-    env.slash("/hp-help")
+    env.slash("/dp-help")
     local out = table.concat(env.printed, "\n")
     for k, v in pairs(env.globals) do
         if type(k) == "string" and k:match("^SLASH_") then

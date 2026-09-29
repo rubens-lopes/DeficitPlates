@@ -3,11 +3,11 @@ max_line_length = false
 exclude_files = { ".release" }
 
 globals = {
-    "HealerPlatesDB",
-    "SLASH_HPHELP1",
-    "SLASH_HPOFF1",
-    "SLASH_HPON1",
-    "SLASH_HPSTATUS1",
+    "DeficitPlatesDB",
+    "SLASH_DPHELP1",
+    "SLASH_DPOFF1",
+    "SLASH_DPON1",
+    "SLASH_DPSTATUS1",
     "SlashCmdList",
 }
 

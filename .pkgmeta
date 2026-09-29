@@ -1,4 +1,4 @@
-package-as: HealerPlates
+package-as: DeficitPlates
 
 manual-changelog:
   filename: CHANGELOG.md

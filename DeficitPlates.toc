@@ -1,11 +1,11 @@
 ## Interface: 16001
-## Title: Healer Plates
-## Notes: Missing health on friendly nameplates, for healers. /hp-help for commands.
+## Title: Deficit Plates
+## Notes: Missing health on friendly nameplates, for healers. /dp-help for commands.
 ## Author: Rubens Lopes
 ## Version: @project-version@
 ## Category: Combat
 ## IconTexture: Interface\Icons\Spell_Holy_FlashHeal
-## SavedVariables: HealerPlatesDB
+## SavedVariables: DeficitPlatesDB
 
 Health.lua
 Core.lua

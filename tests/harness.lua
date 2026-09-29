@@ -1,11 +1,11 @@
--- A stubbed WoW Forever client for Healer Plates tests.
--- Load() runs every file HealerPlates.toc lists, in order, against fake
+-- A stubbed WoW Forever client for Deficit Plates tests.
+-- Load() runs every file DeficitPlates.toc lists, in order, against fake
 -- APIs that behave like the 12.x engine: health values are secret (math,
 -- comparison and tostring raise), and Blizzard's plate tables are
 -- read-only (writing a field raises).
 
 local M = {}
-local ADDON_NAME = "HealerPlates"
+local ADDON_NAME = "DeficitPlates"
 M.FONT = "Fonts\\FRIZQT__.TTF"
 M.FLAT = "Interface\\Buttons\\WHITE8X8"
 
@@ -168,7 +168,7 @@ local function EventFrame()
     return f
 end
 
--- opts.saved            HealerPlatesDB as left by a previous session
+-- opts.saved            DeficitPlatesDB as left by a previous session
 -- opts.role             UnitGroupRolesAssigned("player") (default "NONE"); env.role changes it later
 -- opts.remove           globals this client lacks, e.g. { "UnitHealthMissing" }
 -- opts.secretUnitState  UnitIsFriend, UnitReaction and UnitThreatSituation return secrets
@@ -186,7 +186,7 @@ function M.Load(opts)
         return f
     end
     G.SlashCmdList = {}
-    G.HealerPlatesDB = opts.saved
+    G.DeficitPlatesDB = opts.saved
     G.STANDARD_TEXT_FONT = M.FONT
     G.RAID_CLASS_COLORS = { MAGE = { r = 0.25, g = 0.78, b = 0.92 }, PRIEST = { r = 1, g = 1, b = 1 } }
     G.C_NamePlate = { GetNamePlateForUnit = function(unit) return env.plates[unit] end }
@@ -239,7 +239,7 @@ function M.Load(opts)
     for k in pairs(G) do env.stubs[k] = true end
 
     local ns = {}
-    for line in io.lines("HealerPlates.toc") do
+    for line in io.lines("DeficitPlates.toc") do
         local file = line:match("^([^#%s].-)%s*$")
         if file then
             local chunk = assert(loadfile(file))
