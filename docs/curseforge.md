@@ -14,17 +14,13 @@ Paste these into the project form at https://authors.curseforge.com/#/projects/c
 
 ## Summary
 
-Plater-style nameplates for enemies and friends, with missing health on friendly plates for healers.
+Missing health on friendly nameplates, for healers. Everything else stays Blizzard's.
 
 ## Description
 
-Healer Plates gives World of Warcraft: Forever nameplates the clean look of Plater's defaults, and uses the same look on friendly plates. On friendly plates, the number on the bar is **missing health** (for example `-4.2K`), so you can see at a glance who needs healing. Someone at full health shows `-0`.
+Healer Plates changes one thing on World of Warcraft: Forever nameplates: on friendly plates, the number on the bar is **missing health** (for example `-118`), so you can see at a glance who needs healing. Someone at full health shows `-0`.
 
-**What you get**
-
-- Flat bars with a thin border, the name above the bar, and the value inside the bar.
-- Enemies: health amount and % (`1.2K / 64%`), your debuffs, cast bar, and threat colours.
-- Friends: missing health, Blizzard's own colours, your HoTs and buffs, and incoming heals and absorbs.
+Everything else stays exactly as Blizzard draws it, on friendly and enemy plates alike: colours, auras, cast bars and heal prediction.
 
 **No setup**
 
@@ -32,18 +28,17 @@ Install it and it works. There's no settings panel. Chat commands:
 
 - `/hp-help` lists the commands.
 - `/hp-status` shows what the addon found on this client. Include it in bug reports.
-- `/hp-off` leaves Blizzard's nameplates alone after your next `/reload`. `/hp-on` turns the restyle back on.
+- `/hp-off` leaves Blizzard's nameplates alone after your next `/reload`. `/hp-on` turns missing health back on.
 
 **Good to know**
 
-- It restyles Blizzard's own nameplates, so Blizzard still decides which auras and casts are shown.
 - Pairs well with Dynamic Display Nameplate, which decides *when* plates show.
 - This is a beta. It hasn't been tested inside dungeons and raids yet.
 
 **Compatibility**
 
 - World of Warcraft: Forever (1.60.x)
-- Don't run it alongside another addon that restyles nameplates (Plater, Kui, and so on).
+- Addons that replace nameplates entirely (Plater, Kui, and so on) draw their own plates, so Healer Plates has nothing to change there.
 
 **Source and issues**
 

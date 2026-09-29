@@ -1,22 +1,18 @@
 # Healer Plates
 
-A World of Warcraft: Forever addon that gives nameplates Plater's default look, for enemies and friends alike, with one change for healers: friendly plates show **missing health** (`-4.2K`) in place of a percentage (`-0` at full health).
+A World of Warcraft: Forever addon for healers. Friendly nameplates show **missing health** (for example `-118`, or `-0` at full health) in place of Blizzard's health number.
 
-- Flat bars with a thin black border, the name above the bar, and the value inside the bar on the right.
-- Enemies: health amount and % (`1.2K / 64%`), your debuffs, cast bar, and threat colours (yellow when threat is building, orange when you're about to pull aggro, magenta when you have it; tanks get the reverse).
-- Friends: missing health, Blizzard's own colours, your HoTs and buffs, and incoming heals and absorbs on the bar.
-
-It restyles Blizzard's own nameplates, so Blizzard still decides which auras and casts show. It has no settings panel.
+That's the only change. Enemy and friendly plates otherwise stay exactly as Blizzard draws them: colours, auras, cast bars, heal prediction and all.
 
 ## Commands
 
 - `/hp-help` lists the commands.
 - `/hp-status` shows what the addon found on this client. Include it in bug reports.
-- `/hp-off` leaves Blizzard's nameplates alone after your next `/reload`. `/hp-on` turns the restyle back on.
+- `/hp-off` leaves Blizzard's nameplates alone after your next `/reload`. `/hp-on` turns missing health back on.
 
 ## Works with
 
-[Dynamic Display Nameplate](https://github.com/rubens-lopes/DynamicDisplayNameplate) decides when plates show. Healer Plates decides how they look. Use both, or either one.
+[Dynamic Display Nameplate](https://github.com/rubens-lopes/DynamicDisplayNameplate) decides when plates show. Healer Plates adds missing health to friendly plates. Use both, or either one.
 
 ## Install
 

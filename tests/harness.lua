@@ -77,7 +77,15 @@ local function Widget(name, kind, children, blizzard)
         w.text = table.concat(parts, " <- ")
     end
     function w.SetAlpha(_, a) w.alpha = Label(a) end
-    function w.SetFont(_, font, size, flags) w.font = ("%s,%d,%s"):format(font, size, flags or "") end
+    function w.SetFont(_, font, size, flags)
+        w.fontArgs = { font, size, flags }
+        w.font = ("%s,%d,%s"):format(font, size, flags or "")
+    end
+    -- Blizzard's texts start with the client's own font.
+    function w.GetFont()
+        if w.fontArgs then return unpack(w.fontArgs) end
+        if blizzard then return "Fonts\\BLIZZ.TTF", 9, "OUTLINE" end
+    end
     function w.SetJustifyH(_, justify) w.justify = justify end
     function w.SetTextColor(_, r, g, b) w.textColor = Color(r, g, b) end
     function w.SetStatusBarTexture(_, texture) w.statusBarTexture = texture end
@@ -160,12 +168,11 @@ end
 
 -- opts.saved            HealerPlatesDB as left by a previous session
 -- opts.role             UnitGroupRolesAssigned("player") (default "NONE"); env.role changes it later
--- opts.remove           globals this client lacks, e.g. { "C_CurveUtil" }
--- opts.percentError     UnitHealthPercent(unit, false, ScaleTo100) raises this
+-- opts.remove           globals this client lacks, e.g. { "UnitHealthMissing" }
 -- opts.secretUnitState  UnitIsFriend, UnitReaction and UnitThreatSituation return secrets
 function M.Load(opts)
     opts = opts or {}
-    local env = { printed = {}, units = {}, plates = {}, hooked = {}, curves = {}, frames = {},
+    local env = { printed = {}, units = {}, plates = {}, hooked = {}, frames = {},
         role = opts.role or "NONE" }
 
     local G = setmetatable({}, { __index = _G })
@@ -206,24 +213,6 @@ function M.Load(opts)
     G.UnitHealthMax = function(unit) return Secret("max:" .. unit) end
     G.UnitHealthMissing = function(unit) return Secret("missing:" .. unit) end
     G.AbbreviateNumbers = function(v) return Secret("abbr(" .. Label(v) .. ")") end
-    local scaleTo100 = { "ScaleTo100" }
-    G.CurveConstants = { ScaleTo100 = scaleTo100 }
-    G.C_CurveUtil = { CreateCurve = function()
-        local curve = { points = {} }
-        function curve:AddPoint(x, y) self.points[#self.points + 1] = x .. "=" .. y end
-        env.curves[#env.curves + 1] = curve
-        return curve
-    end }
-    G.UnitHealthPercent = function(unit, _, curve)
-        if curve == scaleTo100 then
-            if opts.percentError then error(opts.percentError, 0) end
-            return Secret("percent:" .. unit)
-        end
-        for i, c in ipairs(env.curves) do
-            if c == curve then return Secret("curve" .. i .. ":" .. unit) end
-        end
-        error("UnitHealthPercent: not a curve", 2)
-    end
 
     -- Blizzard's own updates, which the addon hooks. Each applies Blizzard's
     -- look first, the way the client does.

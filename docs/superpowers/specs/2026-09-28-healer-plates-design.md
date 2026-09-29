@@ -1,11 +1,15 @@
 # Healer Plates: design
 
 Date: 2026-09-28
-Status: approved in chat, awaiting review of this document
+Status: approved; revised 2026-09-29 after in-game testing (see "Revision")
 
 ## Goal
 
-A World of Warcraft: Forever addon that gives nameplates Plater's default enemy look, applies that same look to friendly plates, and on friendly plates shows **missing health** (for example `-4.2K`, and `-0` at full health) in place of health percentage, because the author plays a healer. It replaces Plater, which has too many settings and is buggy on Forever. It is a sibling of Dynamic Display Nameplate (DDN) and published on CurseForge. It does not depend on DDN: DDN decides when plates show, and Healer Plates decides how they look.
+A World of Warcraft: Forever addon for healers: friendly nameplates show **missing health** (for example `-118`, and `-0` at full health) in place of Blizzard's health number. Nothing else on any plate changes. It replaces Plater, which has too many settings and is buggy on Forever. It is a sibling of Dynamic Display Nameplate (DDN) and published on CurseForge. It does not depend on DDN: DDN decides when plates show, and Healer Plates adds missing health to friendly ones.
+
+## Revision (2026-09-29)
+
+The first build restyled Blizzard's plates in Plater's default look (flat bars, border, threat colours, enemy amount and percent). After testing it in game, the user chose to drop the restyle: every issue found came from it (auras moved, colours needed keeping, Blizzard resets the layout and caches bar colours), while Blizzard's own compact plate already looks good. The addon now only adds missing health to friendly plates. Threat colours and the enemy percent were given up knowingly.
 
 ## Target
 
@@ -31,128 +35,74 @@ A throwaway `PlateProbe` addon measured these in the open world, in and out of c
 
 ## Approach
 
-Restyle Blizzard's own plate (`plate.UnitFrame`). Don't build a second frame. The alternative, drawing our own plate on top, was rejected: restyling means less code, and Blizzard keeps handling secret values, auras and casts.
+Leave Blizzard's plate (`plate.UnitFrame`) as it is. On friendly plates, add one FontString on `healthBar`, in the spot and font of Blizzard's health number, showing missing health, and hide Blizzard's health texts. On every other plate, show Blizzard's texts and hide ours.
 
 ### Hard rules
 
-1. **Only call widget methods on Blizzard objects** (`SetFont`, `SetStatusBarTexture`, `SetStatusBarColor`, `SetPoint`, `ClearAllPoints`, `SetAlpha`, `Hide`, `SetTexture`, `SetVertexColor`). **Never write fields onto Blizzard's tables** and never iterate them. Our per-plate state lives in our own weak-keyed tables.
+1. **Only call widget methods on Blizzard objects** (`SetAlpha`, `GetFont`, `CreateFontString`). **Never write fields onto Blizzard's tables** and never iterate them. Our per-plate state lives in our own weak-keyed table.
 2. **Health values only flow into widgets.** Never compare them, test them in a condition, or do arithmetic on them.
-3. **Never read aura data.** Leave `AurasFrame` to Blizzard, which chooses which auras show and where.
-4. Every Blizzard child is looked up defensively (`if uf.LevelFrame then ... end`), so a missing child skips that step and never raises an error.
+3. **Never read aura data.**
+4. Every Blizzard child is looked up defensively, so a missing child skips that step and never raises an error.
 5. Skip plates where `plate:IsForbidden()` is true.
+6. Unit state (`UnitIsFriend`) may be secret inside instances. A secret is treated as unknown (not a friend), via `issecretvalue`.
 
 ## Components
 
 | File | Job |
 |---|---|
-| `Core.lua` | Events, hooks, saved on/off flag, slash commands. Owns the weak tables. |
-| `Style.lua` | One-time layout of a plate: textures, border, fonts, positions, hiding the level and classification. |
-| `Health.lua` | The value text on the bar: enemy %, friendly missing health and its full-health alpha. |
-| `Colors.lua` | Bar colour from reaction, class, tapped state, threat and role. Pure functions, taking plain values (no secrets). |
+| `Health.lua` | `IsFriend(unit)`, `CreateText(bar)` and `Update(bar, text, unit, friend)`. |
+| `Core.lua` | Events, the saved on/off flag, slash commands. Owns the weak table of our texts and the unit-to-plate map. |
 
-The TOC loads `Colors.lua`, `Health.lua`, `Style.lua`, `Core.lua` in that order. The files share one addon namespace table (`local _, ns = ...`).
+The TOC loads `Health.lua`, then `Core.lua`. They share one addon namespace table (`local _, ns = ...`).
 
-### Events and hooks
+### Events
 
 - `ADDON_LOADED` (own name): load `HealerPlatesDB`, defaulting `enabled = true`. If disabled, register nothing else.
-- `NAME_PLATE_UNIT_ADDED(unit)`: look up the plate. Apply `Style` once per `UnitFrame` (tracked in a weak table, because Blizzard reuses plate frames), then update the value text and colour for this unit.
-- `NAME_PLATE_UNIT_REMOVED(unit)`: drop the unit from our unit-to-plate map.
-- `UNIT_HEALTH`, `UNIT_MAXHEALTH` (nameplate units only): update the value text.
-- `UNIT_THREAT_LIST_UPDATE`, `UNIT_THREAT_SITUATION_UPDATE`, `PLAYER_ROLES_ASSIGNED`: recolour affected plates.
-- `hooksecurefunc("CompactUnitFrame_UpdateHealthColor", fn)`: when the frame's unit is a nameplate unit, re-apply our colour. Blizzard sets its colour first, and ours wins.
-- `hooksecurefunc("CompactUnitFrame_UpdateName", fn)`: re-apply our name font, colour and position.
-- If a hooked global doesn't exist, skip that hook. Style still applies on plate add.
+- `NAME_PLATE_UNIT_ADDED(unit)`: look up the plate, skip forbidden ones, remember it, and refresh it.
+- `NAME_PLATE_UNIT_REMOVED(unit)`: forget the unit.
+- `UNIT_HEALTH`, `UNIT_MAXHEALTH`, `UNIT_FACTION` (shown plates only): refresh.
+- No hooks on Blizzard functions.
+
+Refresh: if the unit is a friend and the plate has no text of ours yet, create it (once per `UnitFrame`, because Blizzard reuses plate frames). Then update it.
 
 ## Look
 
-```
-  Name                         left-aligned above the bar
-  ████████████▒▒░░  1.2K / 64%   flat bar, value right-aligned inside
-  [ic] Spell name ▓▓▓░░        Blizzard cast bar, directly under the bar
-```
-
-- **Bar:** `Interface\Buttons\WHITE8X8` texture, `bgTexture` set to black at 60% alpha, and a 1px black border made from four textures we create on `healthBar`.
-- **Name:** `STANDARD_TEXT_FONT`, 10pt, `OUTLINE`, anchored `BOTTOMLEFT` to the bar's `TOPLEFT` with a 2px gap. White on enemies; friends keep Blizzard's name colour.
-- **Value text:** our own FontString on `healthBar`, `STANDARD_TEXT_FONT` 10pt `OUTLINE`, anchored `RIGHT` with a -3px inset. Blizzard's bar texts (`LeftText`, `RightText`, `TextString`) are hidden by setting their alpha to 0 every time we update, so a Blizzard `Show()` can't bring them back.
-- **Hidden:** `LevelFrame`, `PlayerLevelDiffFrame`, `ClassificationFrame` (alpha 0).
-- **Kept as is:** `RaidTargetFrame`, `selectionHighlight` (target), `aggroHighlight`, `CastBarsContainer`. The cast bar gets our flat texture only.
-- **Auras:** `AurasFrame` is left where Blizzard puts it (left of the bar on friendly plates). Blizzard decides the contents: on enemies it shows your debuffs, and on friends it shows your buffs and HoTs. (Changed on 2026-09-29 after the in-game test: our re-anchor overlapped the name.)
-
-### Value text
-
-- **Enemies:** `SetFormattedText("%s / %d%%", AbbreviateNumbers(UnitHealth(unit)), UnitHealthPercent(unit, false, CurveConstants.ScaleTo100))`, for example `1.2K / 64%`. If that call fails, which we check with `pcall` once per session, fall back to hiding the value text.
-- **Friends:** `SetText("-" .. AbbreviateNumbers(UnitHealthMissing(unit)))`, at full alpha. The text always shows, `-0` at full health included (the user asked to drop the full-health fade after trying it on 2026-09-29).
-- **Friendliness** comes from `UnitIsFriend("player", unit)`, which is a plain boolean, re-checked on every update.
-
-### Heal prediction and absorbs
-
-Blizzard already draws these on friendly plates. We only recolour them, with `SetTexture(WHITE8X8)` plus `SetVertexColor`:
-
-| Texture | Colour |
-|---|---|
-| `myHealPrediction` | `0.0, 0.9, 0.4` at 0.8 alpha |
-| `otherHealPrediction` | `0.0, 0.6, 0.3` at 0.8 alpha |
-| `totalAbsorb` | `1, 1, 1` at 0.6 alpha (Blizzard's `totalAbsorbOverlay` shimmer is kept) |
-| `myHealAbsorb` | `0.6, 0.0, 0.0` at 0.7 alpha |
-
-### Colours
-
-Base colour (from `Colors.lua`):
-
-| Unit | Colour |
-|---|---|
-| Friendly player or NPC | Blizzard's own colour (we don't recolour friendly bars; changed 2026-09-29 at the user's request) |
-| Enemy player | class colour |
-| Enemy NPC, hostile (`UnitReaction` ≤ 3) | `0.85, 0.2, 0.2` |
-| Enemy NPC, neutral (`UnitReaction` = 4) | `0.9, 0.8, 0.2` |
-| Tapped by others (`UnitIsTapDenied`) | `0.5, 0.5, 0.5` |
-
-**Threat** overrides the base colour for enemy units only, when `UnitThreatSituation("player", unit)` isn't nil. Role comes from `UnitGroupRolesAssigned("player")`: `"TANK"` means tank, and anything else (including `"NONE"` or a missing API) means non-tank.
-
-| Situation | Non-tank | Tank |
-|---|---|---|
-| 0 | base colour | orange `1.0, 0.5, 0.0` |
-| 1 | yellow `1.0, 0.9, 0.0` | yellow |
-| 2 | orange | yellow |
-| 3 | magenta `1.0, 0.2, 0.8` | base colour |
-
-A tapped-by-others unit is always grey, whatever the threat.
+- **Text:** our FontString on `healthBar`, anchored `RIGHT` with a -3px inset, right-justified, using the font of Blizzard's `RightText` (or `TextString`), falling back to `STANDARD_TEXT_FONT` 10 `OUTLINE`.
+- **Friends:** `SetText("-" .. AbbreviateNumbers(UnitHealthMissing(unit)))` at full alpha; Blizzard's `LeftText`, `RightText` and `TextString` at alpha 0 (alpha, because Blizzard calls `Show()` on them).
+- **Everyone else:** our text at alpha 0; Blizzard's texts at alpha 1, so a reused plate gets its number back.
+- Everything else (bar, colours, name, level, auras, cast bar, heal prediction, highlights) is Blizzard's.
 
 ## Settings and commands
 
 - `## SavedVariables: HealerPlatesDB`, with one field: `enabled` (default `true`).
 - `/hp-help` lists commands.
-- `/hp-status` prints enabled state, how many plates are styled, whether each hook was installed, whether the value APIs (`UnitHealthPercent`, `UnitHealthMissing`) exist, and whether the enemy % fallback kicked in.
-- `/hp-on` and `/hp-off` set `enabled`, then print "Type /reload to apply." The addon doesn't undo a restyle live.
+- `/hp-status` prints enabled state, how many friendly plates carry our text, and whether `UnitHealthMissing` and `AbbreviateNumbers` exist.
+- `/hp-on` and `/hp-off` set `enabled`, then print "Type /reload to apply."
 
 ## Error handling
 
-- Rules 1 to 5 above keep us out of the client's taint and secret-value errors.
-- Each per-plate step (style, value, colour) runs in its own `pcall`. On failure, print one chat line per step per session: `Healer Plates: couldn't <step> (<error>)`. Never let the error reach the frame.
+Each refresh runs in `pcall`. On failure, print one chat line per session: `Healer Plates: couldn't show missing health (<error>)`. Never let the error reach the frame.
 
 ## Testing
 
-`luajit tests/test_addon.lua`, with no WoW client, in the same style as DDN:
+`luajit tests/test_addon.lua`, with no WoW client:
 
-- **WoW stub:** `CreateFrame`, widgets that record calls (`SetText`, `SetFormattedText`, `SetAlpha`, `SetStatusBarColor`, `SetPoint`, `SetFont`), `hooksecurefunc`, a fake `C_NamePlate.GetNamePlateForUnit`, and fake `UnitFrame` objects with the child layout recorded above.
-- **Secret values:** health APIs return a userdata-like object whose metatable raises an error on arithmetic, comparison, `tostring` and concatenation with a non-string. `AbbreviateNumbers` and `UnitHealthPercent` stubs accept it and return tagged values, so tests can assert what reached `SetText`. Any code that touches a health value fails the test.
-- **Blizzard tables are read-only:** fake `UnitFrame` and child tables have a `__newindex` that raises an error. Writing a field onto them fails the test.
-- **Cases:** friendly vs enemy value text; friendly text is always visible; each plate is styled once when reused for another unit; the threat × role table; tapped beats threat; class vs reaction colours; missing children are skipped without error; disabled registers nothing; `/hp-on`, `/hp-off` and `/hp-status` output.
-- **Lint:** luacheck with `std = "lua51"`, the same as DDN.
+- **WoW stub:** event frame, widgets that record calls, `C_NamePlate.GetNamePlateForUnit`, fake `UnitFrame` objects with the child layout above.
+- **Secret values:** health APIs return an object that raises on arithmetic, comparison and `tostring`; `issecretvalue` recognises it.
+- **Blizzard tables are read-only:** writing a field onto a fake Blizzard widget raises.
+- **Cases:** friendly text and hidden Blizzard texts; font and anchor; nothing else touched; enemies untouched; plate reuse both ways; events; faction change; forbidden plates; secret friendliness; missing children; one warning per failure; commands.
+- **Lint:** luacheck with `std = "lua51"`.
 
-**Manual in-game checklist before tagging:** enemy and friendly plates look right in the open world; friendly missing health shows `-0` at full health; heal prediction shows while you cast a heal; threat colours change during a pull; no Lua errors in a 5-minute session; `/hp-off` plus `/reload` gives back Blizzard's look.
+**Manual in-game checklist before tagging:** friendly plates show `-X` (and `-0` at full health) where Blizzard's number was; enemy plates look exactly like Blizzard's; no Lua errors in a 5-minute session; `/hp-off` plus `/reload` gives back Blizzard's number.
 
 ## Release
 
 The same pipeline as DDN: `.pkgmeta`, CI running tests and luacheck, and a tag `vX.Y.Z` that runs the BigWigs packager and attaches `hp-<version>.zip` to a GitHub Release (tags with `beta` or `alpha` become pre-releases). Upload that zip to CurseForge by hand. `docs/curseforge.md` holds the page text and `media/` the logo. `README.md` and `CHANGELOG.md` follow DDN's format.
 
-Once Healer Plates is installed, delete the `PlateProbe` folder from the beta AddOns directory.
-
 ## Out of scope for v1
 
-A settings panel; our own aura filtering (the client blocks it in combat); dispel highlights; an aggro warning on friends; any change to when plates show (that's DDN's job).
+A settings panel; any restyling; threat colours; enemy health text changes; aura changes; any change to when plates show (that's DDN's job).
 
 ## Open questions for the beta
 
-- Do friendly plates stay unforbidden, and do the hooks behave, inside dungeons and raids?
-- Is cast data secret? (Only matters if we later restyle beyond Blizzard's cast bar.)
+- Do friendly plates stay unforbidden, and is `UnitIsFriend` plain, inside dungeons and raids?

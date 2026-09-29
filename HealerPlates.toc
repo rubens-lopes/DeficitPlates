@@ -1,13 +1,11 @@
 ## Interface: 16001
 ## Title: Healer Plates
-## Notes: Plater-style nameplates for enemies and friends. Friendly plates show missing health. /hp-help for commands.
+## Notes: Missing health on friendly nameplates, for healers. /hp-help for commands.
 ## Author: Rubens Lopes
 ## Version: @project-version@
 ## Category: Combat
 ## IconTexture: Interface\Icons\Spell_Holy_FlashHeal
 ## SavedVariables: HealerPlatesDB
 
-Colors.lua
 Health.lua
-Style.lua
 Core.lua
