@@ -62,7 +62,7 @@ function M.rgb(r, g, b) return Color(r, g, b) end
 -- A widget that records what the addon does to it. blizzard = true makes it
 -- read-only, like the client's own frames.
 local function Widget(name, kind, children, blizzard)
-    local w = { name = name, kind = kind, points = {}, alpha = 1, created = {} }
+    local w = { id = name, kind = kind, points = {}, alpha = 1, created = {} }
     for k, v in pairs(children or {}) do w[k] = v end
     local function Make(childKind, layer)
         local child = Widget(name .. ":" .. childKind, childKind)
@@ -145,7 +145,7 @@ end
 -- "POINT relativeTo RELPOINT x y" for a widget's nth anchor (default 1st).
 function M.point(w, n)
     local p = w.points[n or 1]
-    return ("%s %s %s %d %d"):format(p[1], p[2].name, p[3], p[4], p[5])
+    return ("%s %s %s %d %d"):format(p[1], p[2].id, p[3], p[4], p[5])
 end
 
 -- The client --------------------------------------------------------------

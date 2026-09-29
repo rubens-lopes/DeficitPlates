@@ -150,6 +150,102 @@ test("a failing enemy percent hides the text, raises once, then stays quiet", fu
     eq(text.text, "-abbr(missing:nameplate3)", "friends still work")
 end)
 
+-- Style -----------------------------------------------------------------------
+
+test("Create adds our value text and a 1px black border to the bar", function()
+    local S = Load().ns.Style
+    local uf = T.Plate().UnitFrame
+    local state = S.Create(uf)
+    eq(state.value.font, T.FONT .. ",10,OUTLINE", "value font")
+    eq(T.point(state.value), "RIGHT healthBar RIGHT -3 0", "value anchor")
+    eq(state.value.justify, "RIGHT", "value justify")
+    eq(#state.border, 4, "border edges")
+    for i, edge in ipairs(state.border) do
+        eq(edge.colorTexture, "0.00,0.00,0.00,1.00", "edge " .. i .. " colour")
+        eq(#edge.points, 2, "edge " .. i .. " anchors")
+    end
+    eq(T.point(state.border[1], 1), "TOPLEFT healthBar TOPLEFT -1 1", "top edge")
+    eq(state.border[1].height, 1, "top edge height")
+    eq(state.border[3].width, 1, "left edge width")
+    eq(#uf.healthBar.created, 5, "widgets made on the bar")
+end)
+
+test("Apply flattens the bar, hides level and classification, moves auras", function()
+    local S = Load().ns.Style
+    local uf = T.Plate().UnitFrame
+    local state = S.Create(uf)
+    S.Apply(uf, state)
+    eq(uf.healthBar.statusBarTexture, T.FLAT, "bar texture")
+    eq(uf.healthBar.bgTexture.texture, T.FLAT, "background texture")
+    eq(uf.healthBar.bgTexture.vertexColor, "0.00,0.00,0.00,0.60", "background colour")
+    for _, key in ipairs({ "LevelFrame", "PlayerLevelDiffFrame", "ClassificationFrame" }) do
+        eq(uf[key].alpha, 0, key)
+    end
+    eq(uf.RaidTargetFrame.alpha, 1, "raid marker kept")
+    eq(uf.selectionHighlight.alpha, 1, "target highlight kept")
+    eq(T.point(uf.AurasFrame), "BOTTOMLEFT UnitFrame.name TOPLEFT 0 2", "auras above the name")
+    eq(#uf.AurasFrame.points, 1, "auras cleared first")
+    eq(uf.CastBarsContainer.castBar.statusBarTexture, T.FLAT, "cast bar texture")
+    eq(state.castBar, true, "cast bar found")
+end)
+
+test("heal prediction and absorbs are recoloured, the shimmer is kept", function()
+    local S = Load().ns.Style
+    local uf = T.Plate().UnitFrame
+    S.Apply(uf, S.Create(uf))
+    local want = {
+        myHealPrediction = "0.00,0.90,0.40,0.80",
+        otherHealPrediction = "0.00,0.60,0.30,0.80",
+        totalAbsorb = "1.00,1.00,1.00,0.60",
+        myHealAbsorb = "0.60,0.00,0.00,0.70",
+    }
+    for key, color in pairs(want) do
+        eq(uf[key].texture, T.FLAT, key .. " texture")
+        eq(uf[key].vertexColor, color, key .. " colour")
+    end
+    eq(uf.totalAbsorbOverlay.texture, nil, "shimmer untouched")
+end)
+
+test("Name sets font, colour and position above the bar", function()
+    local S = Load().ns.Style
+    local uf = T.Plate().UnitFrame
+    S.Name(uf, 0.25, 0.78, 0.92)
+    eq(uf.name.font, T.FONT .. ",10,OUTLINE", "font")
+    eq(uf.name.textColor, MAGE, "colour")
+    eq(uf.name.justify, "LEFT", "justify")
+    eq(#uf.name.points, 1, "one anchor")
+    eq(T.point(uf.name), "BOTTOMLEFT healthBar TOPLEFT 0 2", "anchor")
+end)
+
+test("HideBarTexts hides Blizzard's bar texts only", function()
+    local S = Load().ns.Style
+    local uf = T.Plate().UnitFrame
+    S.HideBarTexts(uf)
+    for _, key in ipairs({ "LeftText", "RightText", "TextString" }) do
+        eq(uf.healthBar[key].alpha, 0, key)
+    end
+    eq(uf.healthBar.barTexture.alpha, 1, "bar texture kept")
+end)
+
+test("a plate missing children is styled without errors", function()
+    local S = Load().ns.Style
+    local bare = T.Plate({ "healthBar", "name", "LevelFrame", "PlayerLevelDiffFrame",
+        "ClassificationFrame", "AurasFrame", "CastBarsContainer", "myHealPrediction",
+        "otherHealPrediction", "totalAbsorb", "myHealAbsorb" }).UnitFrame
+    local state = S.Create(bare)
+    S.Apply(bare, state)
+    S.Name(bare, 1, 1, 1)
+    S.HideBarTexts(bare)
+    eq(state.value, nil, "no value text without a bar")
+    eq(state.castBar, false, "no cast bar")
+    local noTexts = T.Plate({ "bgTexture", "LeftText", "RightText", "TextString" }).UnitFrame
+    S.Apply(noTexts, S.Create(noTexts))
+    S.HideBarTexts(noTexts)
+    local noName = T.Plate({ "name" }).UnitFrame
+    S.Apply(noName, S.Create(noName))
+    eq(#noName.AurasFrame.points, 0, "auras left alone without a name to anchor to")
+end)
+
 -- Runner (keep last) ------------------------------------------------------------
 
 T.run(tests)
