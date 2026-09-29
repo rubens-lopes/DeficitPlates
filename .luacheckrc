@@ -22,6 +22,7 @@ read_globals = {
     "STANDARD_TEXT_FONT",
     "UnitClass",
     "UnitGroupRolesAssigned",
+    "UnitHealth",
     "UnitHealthMissing",
     "UnitHealthPercent",
     "UnitIsFriend",

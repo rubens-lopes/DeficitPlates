@@ -37,7 +37,7 @@ Restyle Blizzard's own plate (`plate.UnitFrame`). Don't build a second frame. Th
 
 1. **Only call widget methods on Blizzard objects** (`SetFont`, `SetStatusBarTexture`, `SetStatusBarColor`, `SetPoint`, `ClearAllPoints`, `SetAlpha`, `Hide`, `SetTexture`, `SetVertexColor`). **Never write fields onto Blizzard's tables** and never iterate them. Our per-plate state lives in our own weak-keyed tables.
 2. **Health values only flow into widgets.** Never compare them, test them in a condition, or do arithmetic on them.
-3. **Never read aura data.** Restyle and reposition `AurasFrame`, and let Blizzard choose which auras show.
+3. **Never read aura data.** Leave `AurasFrame` to Blizzard, which chooses which auras show and where.
 4. Every Blizzard child is looked up defensively (`if uf.LevelFrame then ... end`), so a missing child skips that step and never raises an error.
 5. Skip plates where `plate:IsForbidden()` is true.
 
@@ -66,22 +66,21 @@ The TOC loads `Colors.lua`, `Health.lua`, `Style.lua`, `Core.lua` in that order.
 ## Look
 
 ```
-  [aura][aura]                 AurasFrame, above the name
   Name                         left-aligned above the bar
-  ████████████▒▒░░░░░░  64%    flat bar, value right-aligned inside
+  ████████████▒▒░░  1.2K / 64%   flat bar, value right-aligned inside
   [ic] Spell name ▓▓▓░░        Blizzard cast bar, directly under the bar
 ```
 
 - **Bar:** `Interface\Buttons\WHITE8X8` texture, `bgTexture` set to black at 60% alpha, and a 1px black border made from four textures we create on `healthBar`.
-- **Name:** `STANDARD_TEXT_FONT`, 10pt, `OUTLINE`, anchored `BOTTOMLEFT` to the bar's `TOPLEFT` with a 2px gap. White, except friendly players, who use their class colour.
+- **Name:** `STANDARD_TEXT_FONT`, 10pt, `OUTLINE`, anchored `BOTTOMLEFT` to the bar's `TOPLEFT` with a 2px gap. White on enemies; friends keep Blizzard's name colour.
 - **Value text:** our own FontString on `healthBar`, `STANDARD_TEXT_FONT` 10pt `OUTLINE`, anchored `RIGHT` with a -3px inset. Blizzard's bar texts (`LeftText`, `RightText`, `TextString`) are hidden by setting their alpha to 0 every time we update, so a Blizzard `Show()` can't bring them back.
 - **Hidden:** `LevelFrame`, `PlayerLevelDiffFrame`, `ClassificationFrame` (alpha 0).
 - **Kept as is:** `RaidTargetFrame`, `selectionHighlight` (target), `aggroHighlight`, `CastBarsContainer`. The cast bar gets our flat texture only.
-- **Auras:** `AurasFrame` re-anchored with `BOTTOMLEFT` to the name's `TOPLEFT`, 2px gap. Blizzard decides the contents: on enemies it shows your debuffs, and on friends it shows your buffs and HoTs.
+- **Auras:** `AurasFrame` is left where Blizzard puts it (left of the bar on friendly plates). Blizzard decides the contents: on enemies it shows your debuffs, and on friends it shows your buffs and HoTs. (Changed on 2026-09-29 after the in-game test: our re-anchor overlapped the name.)
 
 ### Value text
 
-- **Enemies:** `SetFormattedText("%d%%", UnitHealthPercent(unit, false, CurveConstants.ScaleTo100))`. If that call fails, which we check with `pcall` once per session, fall back to hiding the value text.
+- **Enemies:** `SetFormattedText("%s / %d%%", AbbreviateNumbers(UnitHealth(unit)), UnitHealthPercent(unit, false, CurveConstants.ScaleTo100))`, for example `1.2K / 64%`. If that call fails, which we check with `pcall` once per session, fall back to hiding the value text.
 - **Friends:** `SetText("-" .. AbbreviateNumbers(UnitHealthMissing(unit)))`, at full alpha. The text always shows, `-0` at full health included (the user asked to drop the full-health fade after trying it on 2026-09-29).
 - **Friendliness** comes from `UnitIsFriend("player", unit)`, which is a plain boolean, re-checked on every update.
 
@@ -102,8 +101,7 @@ Base colour (from `Colors.lua`):
 
 | Unit | Colour |
 |---|---|
-| Friendly player | class colour (`RAID_CLASS_COLORS`) |
-| Friendly NPC | `0.2, 0.8, 0.2` |
+| Friendly player or NPC | Blizzard's own colour (we don't recolour friendly bars; changed 2026-09-29 at the user's request) |
 | Enemy player | class colour |
 | Enemy NPC, hostile (`UnitReaction` ≤ 3) | `0.85, 0.2, 0.2` |
 | Enemy NPC, neutral (`UnitReaction` = 4) | `0.9, 0.8, 0.2` |

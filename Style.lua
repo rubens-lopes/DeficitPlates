@@ -77,11 +77,6 @@ function Style.Apply(uf, state)
             texture:SetVertexColor(c[1], c[2], c[3], c[4])
         end)
     end
-    Step(function()
-        if not (uf.AurasFrame and uf.name) then return end
-        uf.AurasFrame:ClearAllPoints()
-        uf.AurasFrame:SetPoint("BOTTOMLEFT", uf.name, "TOPLEFT", 0, GAP)
-    end)
     state.castBar = false
     Step(function()
         local castBar = uf.castBar or (uf.CastBarsContainer and uf.CastBarsContainer.castBar)
@@ -93,12 +88,13 @@ function Style.Apply(uf, state)
 end
 
 -- Name font, colour and position. Runs on every plate update and after
--- Blizzard's own name update, which resets them.
+-- Blizzard's own name update, which resets them. With no colour, the name
+-- keeps Blizzard's.
 function Style.Name(uf, r, g, b)
     local name, bar = uf.name, uf.healthBar
     if not name then return end
     name:SetFont(STANDARD_TEXT_FONT, FONT_SIZE, "OUTLINE")
-    name:SetTextColor(r, g, b)
+    if r then name:SetTextColor(r, g, b) end
     name:SetJustifyH("LEFT")
     if bar then
         name:ClearAllPoints()

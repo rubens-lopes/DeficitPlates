@@ -23,8 +23,8 @@ Healer Plates gives World of Warcraft: Forever nameplates the clean look of Plat
 **What you get**
 
 - Flat bars with a thin border, the name above the bar, and the value inside the bar.
-- Enemies: health %, your debuffs, cast bar, and threat colours.
-- Friends: missing health, class colours, your HoTs and buffs, and incoming heals and absorbs.
+- Enemies: health amount and % (`1.2K / 64%`), your debuffs, cast bar, and threat colours.
+- Friends: missing health, Blizzard's own colours, your HoTs and buffs, and incoming heals and absorbs.
 
 **No setup**
 

@@ -69,7 +69,8 @@ function Colors.Bar(info)
     return unpack(base)
 end
 
+-- Friends keep Blizzard's name colour, so this returns nothing for them.
 function Colors.Name(info)
-    local c = info.friend and info.player and ClassColor(info.class)
-    return unpack(c or WHITE)
+    if info.friend then return end
+    return unpack(WHITE)
 end

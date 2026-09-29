@@ -20,7 +20,8 @@ function Health.Update(text, unit, friend)
         return
     end
     local ok, err = pcall(function()
-        text:SetFormattedText("%d%%", UnitHealthPercent(unit, false, CurveConstants.ScaleTo100))
+        text:SetFormattedText("%s / %d%%", AbbreviateNumbers(UnitHealth(unit)),
+            UnitHealthPercent(unit, false, CurveConstants.ScaleTo100))
     end)
     if ok then
         text:SetAlpha(1)

@@ -30,8 +30,11 @@ local function Rename(uf, unit)
     Style.Name(uf, Colors.Name(Colors.Info(unit)))
 end
 
+-- Friendly bars keep Blizzard's colour.
 local function Recolor(uf, unit)
-    if uf.healthBar then uf.healthBar:SetStatusBarColor(Colors.Bar(Colors.Info(unit))) end
+    local info = Colors.Info(unit)
+    if info.friend or not uf.healthBar then return end
+    uf.healthBar:SetStatusBarColor(Colors.Bar(info))
 end
 
 local function ShowHealth(uf, unit)
