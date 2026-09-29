@@ -323,6 +323,20 @@ test("a reused plate is styled once and follows its new unit", function()
     eq(uf.healthBar.color, RED, "colour")
 end)
 
+test("a plate Blizzard reset gets our look back when it's shown again", function()
+    local env = Load()
+    local plate = T.Plate()
+    local uf = env.show("nameplate1", ENEMY, plate)
+    -- Blizzard's own setup reruns (a nameplate size change, for example).
+    T.fields(uf.healthBar).statusBarTexture = "blizzard"
+    T.fields(uf.AurasFrame).points = {}
+    env.hide("nameplate1")
+    env.show("nameplate2", ENEMY, plate)
+    eq(uf.healthBar.statusBarTexture, T.FLAT, "bar texture back")
+    eq(T.point(uf.AurasFrame), "BOTTOMLEFT UnitFrame.name TOPLEFT 0 2", "auras anchor back")
+    eq(#uf.healthBar.created, 5, "our widgets still made once")
+end)
+
 test("health events update shown plates and ignore everything else", function()
     local env = Load()
     local uf = env.show("nameplate1", FRIEND)

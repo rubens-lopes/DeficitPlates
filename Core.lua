@@ -42,9 +42,7 @@ local function ShowHealth(uf, unit)
 end
 
 local function Setup(uf)
-    local state = Style.Create(uf)
-    states[uf] = state
-    Style.Apply(uf, state)
+    states[uf] = Style.Create(uf)
 end
 
 local function OnPlateAdded(unit)
@@ -54,6 +52,8 @@ local function OnPlateAdded(unit)
     if not uf then return end
     if not states[uf] then Try("style a plate", Setup, uf) end
     if not states[uf] then return end
+    -- Every time, because Blizzard's own setup can reset the layout.
+    Try("style a plate", Style.Apply, uf, states[uf])
     frames[unit] = uf
     Try("style a name", Rename, uf, unit)
     Try("show health", ShowHealth, uf, unit)
