@@ -100,6 +100,8 @@ local function Widget(name, kind, children, blizzard)
         w.points[#w.points + 1] = { point, relativeTo, relativePoint, x or 0, y or 0 }
     end
     function w.IsForbidden() return w.forbidden == true end
+    function w.GetAlpha() return w.alpha end
+    function w.IsShown() return w.hidden ~= true end
     function w.CreateTexture(...) return Make("Texture", select(3, ...)) end
     function w.CreateFontString(...) return Make("FontString", select(3, ...)) end
     if not blizzard then return w end

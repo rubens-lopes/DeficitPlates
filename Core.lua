@@ -12,15 +12,18 @@ local texts = setmetatable({}, { __mode = "k" })
 -- Nameplate unit token -> UnitFrame, while that plate is shown.
 local frames = {}
 local warned = {}
+local lastError
 local running = false
 -- Replaced by the saved table on ADDON_LOADED.
 local settings = { enabled = true }
 
 local function Try(step, fn, ...)
     local ok, err = pcall(fn, ...)
-    if ok or warned[step] then return end
+    if ok then return end
+    lastError = ("couldn't %s (%s)"):format(step, tostring(err))
+    if warned[step] then return end
     warned[step] = true
-    print(("|cffff8800%s:|r couldn't %s (%s)"):format(TITLE, step, tostring(err)))
+    print(("|cffff8800%s:|r %s"):format(TITLE, lastError))
 end
 
 local function Refresh(uf, unit)
@@ -75,6 +78,25 @@ local function Say(msg) print(TAG .. msg) end
 
 local function Has(api) return api and "yes" or "no" end
 
+-- "shown", "hidden" or "?" for a widget. Guarded, because this client can
+-- hide values from addons.
+local function Visible(region)
+    local ok, shown = pcall(function() return region:IsShown() and region:GetAlpha() > 0 end)
+    if not ok then return "?" end
+    return shown and "shown" or "hidden"
+end
+
+local function BlizzardTexts(bar)
+    if not bar then return "none" end
+    local seen
+    for _, key in ipairs({ "LeftText", "RightText", "TextString" }) do
+        local state = bar[key] and Visible(bar[key])
+        if state == "shown" or state == "?" then return state end
+        if state then seen = state end
+    end
+    return seen or "none"
+end
+
 local function Help()
     Say("commands")
     print("  /hp-help - show this list")
@@ -91,6 +113,17 @@ local function Status()
     print(("  friendly plates with missing health: %d"):format(count))
     print(("  UnitHealthMissing: %s, AbbreviateNumbers: %s"):format(
         Has(UnitHealthMissing), Has(AbbreviateNumbers)))
+    local units = {}
+    for unit in pairs(frames) do units[#units + 1] = unit end
+    table.sort(units)
+    for _, unit in ipairs(units) do
+        local uf = frames[unit]
+        local text = texts[uf]
+        print(("  %s: %s, ours %s, Blizzard's %s"):format(unit,
+            Health.IsFriend(unit) and "friend" or "not friend",
+            text and Visible(text) or "none", BlizzardTexts(uf.healthBar)))
+    end
+    print("  last error: " .. (lastError or "none"))
 end
 
 -- Changes take effect on reload, so both directions ask for one.

@@ -246,6 +246,32 @@ test("/hp-status reports what the addon found on this client", function()
     end
 end)
 
+test("/hp-status lists each shown plate and the last error", function()
+    local env = Load()
+    env.show("nameplate1", FRIEND)
+    env.show("nameplate2", ENEMY)
+    env.show("nameplate3", FRIEND, T.Plate())
+    env.hide("nameplate3")
+    env.printed = {}
+    env.slash("/hp-status")
+    local out = table.concat(env.printed, "\n")
+    for _, want in ipairs({
+        "nameplate1: friend, ours shown, Blizzard's hidden",
+        "nameplate2: not friend, ours none, Blizzard's shown",
+        "last error: none",
+    }) do
+        assert(out:find(want, 1, true), "missing '" .. want .. "' in:\n" .. out)
+    end
+    assert(not out:find("nameplate3", 1, true), "removed plate listed:\n" .. out)
+
+    local broken = Load({ remove = { "UnitHealthMissing" } })
+    broken.show("nameplate1", FRIEND)
+    broken.printed = {}
+    broken.slash("/hp-status")
+    out = table.concat(broken.printed, "\n")
+    assert(out:find("last error: couldn't show missing health (", 1, true), out)
+end)
+
 test("/hp-status when turned off", function()
     local env = Load({ saved = { enabled = false } })
     env.slash("/hp-status")
