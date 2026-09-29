@@ -98,6 +98,58 @@ test("Info reads plain unit state from the client", function()
     eq(env.ns.Colors.Info("nameplate1").tank, false, "healer is not a tank")
 end)
 
+-- Health ----------------------------------------------------------------------
+
+test("friendly plates show missing health, hidden at full health", function()
+    local env = Load()
+    local text = T.Widget("value", "FontString")
+    env.ns.Health.Update(text, "nameplate1", true)
+    eq(text.text, "-abbr(missing:nameplate1)", "text")
+    eq(text.alpha, "curve1:nameplate1", "alpha comes from the full-health curve")
+    eq(table.concat(env.curves[1].points, " "), "0=1 0.999=1 1=0", "curve points")
+end)
+
+test("the full-health curve is built once", function()
+    local env = Load()
+    local text = T.Widget("value", "FontString")
+    env.ns.Health.Update(text, "nameplate1", true)
+    env.ns.Health.Update(text, "nameplate2", true)
+    eq(#env.curves, 1, "curves built")
+    eq(text.alpha, "curve1:nameplate2", "same curve, new unit")
+end)
+
+test("enemy plates show health percent at full alpha", function()
+    local env = Load()
+    local text = T.Widget("value", "FontString")
+    env.ns.Health.Update(text, "nameplate2", false)
+    eq(text.text, "%d%% <- percent:nameplate2", "text")
+    eq(text.alpha, 1, "alpha")
+end)
+
+test("a text reused from a friend to an enemy gets full alpha back", function()
+    local env = Load()
+    local text = T.Widget("value", "FontString")
+    env.ns.Health.Update(text, "nameplate1", true)
+    env.ns.Health.Update(text, "nameplate1", false)
+    eq(text.alpha, 1, "alpha")
+    eq(text.text, "%d%% <- percent:nameplate1", "text")
+end)
+
+test("a failing enemy percent hides the text, raises once, then stays quiet", function()
+    local env = Load({ percentError = "blocked" })
+    local H = env.ns.Health
+    local text = T.Widget("value", "FontString")
+    local ok, err = pcall(H.Update, text, "nameplate1", false)
+    eq(ok, false, "first call raises")
+    eq(err, "blocked", "error")
+    eq(text.alpha, 0, "hidden")
+    eq(H.percentError, "blocked", "remembered")
+    eq((pcall(H.Update, text, "nameplate2", false)), true, "second call is silent")
+    eq(text.alpha, 0, "still hidden")
+    H.Update(text, "nameplate3", true)
+    eq(text.text, "-abbr(missing:nameplate3)", "friends still work")
+end)
+
 -- Runner (keep last) ------------------------------------------------------------
 
 T.run(tests)
