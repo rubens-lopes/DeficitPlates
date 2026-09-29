@@ -25,17 +25,28 @@ local function ClassColor(class)
     if c then return { c.r, c.g, c.b } end
 end
 
+-- Unit state can be secret on this client (inside instances, for example).
+-- Comparing a secret or using it as a table key raises, so treat it as unknown.
+local function Plain(v)
+    if issecretvalue and issecretvalue(v) then return nil end
+    return v
+end
+
+function Colors.IsFriend(unit)
+    return Plain(UnitIsFriend("player", unit)) == true
+end
+
 -- Everything Bar() and Name() need. None of these APIs return health.
 function Colors.Info(unit)
     local _, class = UnitClass(unit)
     return {
-        friend = UnitIsFriend("player", unit) == true,
-        player = UnitIsPlayer(unit) == true,
-        class = class,
-        reaction = UnitReaction(unit, "player"),
-        tapped = UnitIsTapDenied(unit) == true,
-        threat = UnitThreatSituation("player", unit),
-        tank = UnitGroupRolesAssigned ~= nil and UnitGroupRolesAssigned("player") == "TANK",
+        friend = Colors.IsFriend(unit),
+        player = Plain(UnitIsPlayer(unit)) == true,
+        class = Plain(class),
+        reaction = Plain(UnitReaction(unit, "player")),
+        tapped = Plain(UnitIsTapDenied(unit)) == true,
+        threat = Plain(UnitThreatSituation("player", unit)),
+        tank = UnitGroupRolesAssigned ~= nil and Plain(UnitGroupRolesAssigned("player")) == "TANK",
     }
 end
 

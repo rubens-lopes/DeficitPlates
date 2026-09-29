@@ -38,7 +38,7 @@ local function ShowHealth(uf, unit)
     local value = states[uf].value
     if not value then return end
     Style.HideBarTexts(uf)
-    Health.Update(value, unit, UnitIsFriend("player", unit) == true)
+    Health.Update(value, unit, Colors.IsFriend(unit))
 end
 
 local function Setup(uf)

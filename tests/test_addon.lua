@@ -373,12 +373,21 @@ test("forbidden plates are left alone", function()
     eq(#env.printed, 0, "no warnings")
 end)
 
-test("secret unit state never raises (untested inside instances)", function()
+test("secret unit state falls back to plain values (untested inside instances)", function()
     local env = Load({ secretUnitState = true })
+    env.units.nameplate1 = { reaction = 2, threat = 3 }
+    local info = env.ns.Colors.Info("nameplate1")
+    -- The client raises on comparing a secret or using it as a table key,
+    -- which the harness can't imitate, so Info must never hand one out.
+    eq(info.friend, false, "friend")
+    eq(info.reaction, nil, "reaction")
+    eq(info.threat, nil, "threat")
+    eq(info.tank, false, "tank")
     local uf = env.show("nameplate1", ENEMY)
     env.fire("UNIT_THREAT_LIST_UPDATE", "nameplate1")
     eq(uf.healthBar.color, RED, "falls back to hostile")
     eq(T.value(uf).text, "%d%% <- percent:nameplate1", "enemy text")
+    eq(#env.printed, 0, "no warnings")
 end)
 
 test("a failing step prints one line and never raises", function()

@@ -193,7 +193,10 @@ function M.Load(opts)
     G.UnitIsTapDenied = function(unit) return Info(unit).tapped == true end
     G.UnitThreatSituation = function(_, unit) return Info(unit).threat end
     G.UnitGroupRolesAssigned = function() return env.role end
+    -- The client's check for secret values; code uses it to fall back safely.
+    G.issecretvalue = function(v) return v ~= nil and labels[v] ~= nil end
     if opts.secretUnitState then
+        G.UnitGroupRolesAssigned = function() return Secret("role") end
         G.UnitIsFriend = function(_, unit) return Secret("friend:" .. unit) end
         G.UnitReaction = function(unit) return Secret("reaction:" .. unit) end
         G.UnitThreatSituation = function(_, unit) return Secret("threat:" .. unit) end

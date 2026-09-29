@@ -18,6 +18,7 @@ read_globals = {
     "CreateFrame",
     "CurveConstants",
     "hooksecurefunc",
+    "issecretvalue",
     "RAID_CLASS_COLORS",
     "STANDARD_TEXT_FONT",
     "UnitClass",
