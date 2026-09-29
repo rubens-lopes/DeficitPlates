@@ -246,6 +246,163 @@ test("a plate missing children is styled without errors", function()
     eq(#noName.AurasFrame.points, 0, "auras left alone without a name to anchor to")
 end)
 
+-- Core ------------------------------------------------------------------------
+
+local FRIEND = { friend = true, player = true, class = "MAGE", reaction = 5 }
+local ENEMY = { reaction = 2 }
+
+test("registers its events and hooks when enabled (the default)", function()
+    local env = Load()
+    for _, event in ipairs({ "NAME_PLATE_UNIT_ADDED", "NAME_PLATE_UNIT_REMOVED", "UNIT_HEALTH",
+        "UNIT_MAXHEALTH", "UNIT_THREAT_LIST_UPDATE", "UNIT_THREAT_SITUATION_UPDATE",
+        "PLAYER_ROLES_ASSIGNED" }) do
+        eq(env.frame.events[event], true, event)
+    end
+    eq(env.frame.events.ADDON_LOADED, nil, "ADDON_LOADED unregistered")
+    eq(env.hooked.CompactUnitFrame_UpdateHealthColor, true, "colour hook")
+    eq(env.hooked.CompactUnitFrame_UpdateName, true, "name hook")
+    eq(env.globals.HealerPlatesDB.enabled, true, "saved default")
+end)
+
+test("a saved off setting registers nothing and hooks nothing", function()
+    local env = Load({ saved = { enabled = false } })
+    eq(env.frame.events.NAME_PLATE_UNIT_ADDED, nil, "plate events")
+    eq(next(env.hooked), nil, "hooks")
+    local uf = env.show("nameplate1", ENEMY)
+    eq(#uf.healthBar.created, 0, "plate left alone")
+end)
+
+test("a friendly plate shows missing health in its class colour", function()
+    local env = Load()
+    local uf = env.show("nameplate1", FRIEND)
+    eq(T.value(uf).text, "-abbr(missing:nameplate1)", "text")
+    eq(T.value(uf).alpha, "curve1:nameplate1", "hidden at full health")
+    eq(uf.healthBar.color, MAGE, "bar colour")
+    eq(uf.name.textColor, MAGE, "name colour")
+    eq(uf.healthBar.LeftText.alpha, 0, "Blizzard's text hidden")
+    eq(uf.healthBar.statusBarTexture, T.FLAT, "styled")
+end)
+
+test("an enemy plate shows health percent and a white name", function()
+    local env = Load()
+    local uf = env.show("nameplate2", ENEMY)
+    eq(T.value(uf).text, "%d%% <- percent:nameplate2", "text")
+    eq(T.value(uf).alpha, 1, "alpha")
+    eq(uf.healthBar.color, RED, "bar colour")
+    eq(uf.name.textColor, WHITE, "name colour")
+end)
+
+test("a reused plate is styled once and follows its new unit", function()
+    local env = Load()
+    local plate = T.Plate()
+    env.show("nameplate1", FRIEND, plate)
+    env.hide("nameplate1")
+    local uf = env.show("nameplate2", ENEMY, plate)
+    eq(#uf.healthBar.created, 5, "no second set of widgets")
+    eq(T.value(uf).text, "%d%% <- percent:nameplate2", "text")
+    eq(T.value(uf).alpha, 1, "alpha back to full")
+    eq(uf.healthBar.color, RED, "colour")
+end)
+
+test("health events update shown plates and ignore everything else", function()
+    local env = Load()
+    local uf = env.show("nameplate1", FRIEND)
+    local value = T.value(uf)
+    value.text = nil
+    env.fire("UNIT_HEALTH", "nameplate1")
+    eq(value.text, "-abbr(missing:nameplate1)", "UNIT_HEALTH")
+    value.text = nil
+    env.fire("UNIT_MAXHEALTH", "nameplate1")
+    eq(value.text, "-abbr(missing:nameplate1)", "UNIT_MAXHEALTH")
+    env.hide("nameplate1")
+    value.text = nil
+    env.fire("UNIT_HEALTH", "nameplate1")
+    eq(value.text, nil, "removed plate ignored")
+    env.fire("UNIT_HEALTH", "player")
+    eq(#env.printed, 0, "no warnings")
+end)
+
+test("threat and role events recolour enemy plates", function()
+    local env = Load()
+    local uf = env.show("nameplate1", ENEMY)
+    env.units.nameplate1.threat = 3
+    env.fire("UNIT_THREAT_LIST_UPDATE", "nameplate1")
+    eq(uf.healthBar.color, MAGENTA, "list update")
+    env.units.nameplate1.threat = 1
+    env.fire("UNIT_THREAT_SITUATION_UPDATE", "player")
+    eq(uf.healthBar.color, YELLOW, "situation update")
+    env.role = "TANK"
+    env.units.nameplate1.threat = 0
+    env.fire("PLAYER_ROLES_ASSIGNED")
+    eq(uf.healthBar.color, ORANGE, "role change")
+    env.units.nameplate1.threat = 3
+    env.fire("UNIT_THREAT_LIST_UPDATE", "target")
+    eq(uf.healthBar.color, RED, "unknown unit recolours all plates")
+end)
+
+test("Blizzard's colour and name updates are overridden on our plates only", function()
+    local env = Load()
+    local uf = env.show("nameplate1", ENEMY)
+    env.globals.CompactUnitFrame_UpdateHealthColor(uf)
+    eq(uf.healthBar.color, RED, "our bar colour wins")
+    env.globals.CompactUnitFrame_UpdateName(uf)
+    eq(uf.name.font, T.FONT .. ",10,OUTLINE", "our name font wins")
+    eq(uf.name.textColor, WHITE, "our name colour wins")
+    eq(T.point(uf.name), "BOTTOMLEFT healthBar TOPLEFT 0 2", "our name anchor wins")
+    local other = T.Plate().UnitFrame
+    env.globals.CompactUnitFrame_UpdateHealthColor(other)
+    eq(other.healthBar.color, "0.00,1.00,0.00", "unstyled frame keeps Blizzard's colour")
+end)
+
+test("a client without the hooked functions still styles plates", function()
+    local env = Load({ remove = { "CompactUnitFrame_UpdateHealthColor", "CompactUnitFrame_UpdateName" } })
+    eq(next(env.hooked), nil, "no hooks")
+    local uf = env.show("nameplate1", ENEMY)
+    eq(uf.healthBar.color, RED, "colour")
+    eq(#env.printed, 0, "no warnings")
+end)
+
+test("forbidden plates are left alone", function()
+    local env = Load()
+    local plate = T.Plate()
+    T.fields(plate).forbidden = true
+    local uf = env.show("nameplate1", ENEMY, plate)
+    eq(#uf.healthBar.created, 0, "nothing created")
+    eq(uf.healthBar.statusBarTexture, nil, "not restyled")
+    env.fire("UNIT_HEALTH", "nameplate1")
+    eq(#env.printed, 0, "no warnings")
+end)
+
+test("secret unit state never raises (untested inside instances)", function()
+    local env = Load({ secretUnitState = true })
+    local uf = env.show("nameplate1", ENEMY)
+    env.fire("UNIT_THREAT_LIST_UPDATE", "nameplate1")
+    eq(uf.healthBar.color, RED, "falls back to hostile")
+    eq(T.value(uf).text, "%d%% <- percent:nameplate1", "enemy text")
+end)
+
+test("a failing step prints one line and never raises", function()
+    local env = Load({ percentError = "blocked" })
+    local uf = env.show("nameplate1", ENEMY)
+    env.show("nameplate2", ENEMY)
+    env.fire("UNIT_HEALTH", "nameplate1")
+    eq(#env.printed, 1, "warnings printed")
+    assert(env.printed[1]:find("Healer Plates:", 1, true), env.printed[1])
+    assert(env.printed[1]:find("couldn't show health (blocked)", 1, true), env.printed[1])
+    eq(T.value(uf).alpha, 0, "text hidden")
+    eq(uf.healthBar.color, RED, "later steps still ran")
+end)
+
+test("normal play prints nothing", function()
+    local env = Load()
+    env.show("nameplate1", FRIEND)
+    env.show("nameplate2", ENEMY)
+    env.fire("UNIT_HEALTH", "nameplate1")
+    env.fire("UNIT_THREAT_SITUATION_UPDATE", "player")
+    env.hide("nameplate2")
+    eq(#env.printed, 0, "messages printed")
+end)
+
 -- Runner (keep last) ------------------------------------------------------------
 
 T.run(tests)
