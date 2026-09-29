@@ -100,22 +100,14 @@ end)
 
 -- Health ----------------------------------------------------------------------
 
-test("friendly plates show missing health, hidden at full health", function()
+test("friendly plates always show missing health, even at full health", function()
     local env = Load()
     local text = T.Widget("value", "FontString")
+    text.alpha = 0
     env.ns.Health.Update(text, "nameplate1", true)
     eq(text.text, "-abbr(missing:nameplate1)", "text")
-    eq(text.alpha, "curve1:nameplate1", "alpha comes from the full-health curve")
-    eq(table.concat(env.curves[1].points, " "), "0=1 0.999=1 1=0", "curve points")
-end)
-
-test("the full-health curve is built once", function()
-    local env = Load()
-    local text = T.Widget("value", "FontString")
-    env.ns.Health.Update(text, "nameplate1", true)
-    env.ns.Health.Update(text, "nameplate2", true)
-    eq(#env.curves, 1, "curves built")
-    eq(text.alpha, "curve1:nameplate2", "same curve, new unit")
+    eq(text.alpha, 1, "always visible")
+    eq(#env.curves, 0, "no fade curve")
 end)
 
 test("enemy plates show health percent at full alpha", function()
@@ -295,7 +287,7 @@ test("a friendly plate shows missing health in its class colour", function()
     local env = Load()
     local uf = env.show("nameplate1", FRIEND)
     eq(T.value(uf).text, "-abbr(missing:nameplate1)", "text")
-    eq(T.value(uf).alpha, "curve1:nameplate1", "hidden at full health")
+    eq(T.value(uf).alpha, 1, "always visible")
     eq(uf.healthBar.color, MAGE, "bar colour")
     eq(uf.name.textColor, MAGE, "name colour")
     eq(uf.healthBar.LeftText.alpha, 0, "Blizzard's text hidden")
@@ -470,7 +462,7 @@ test("/hp-off and /hp-on save the setting and ask for a reload", function()
 end)
 
 test("/hp-status reports what the addon found on this client", function()
-    local env = Load({ remove = { "CompactUnitFrame_UpdateName", "C_CurveUtil" }, percentError = "blocked" })
+    local env = Load({ remove = { "CompactUnitFrame_UpdateName" }, percentError = "blocked" })
     env.show("nameplate1", ENEMY)
     env.printed = {}
     env.slash("/hp-status")
@@ -480,7 +472,7 @@ test("/hp-status reports what the addon found on this client", function()
         "plates styled: 1 (cast bar found on 1)",
         "hook CompactUnitFrame_UpdateHealthColor: installed",
         "hook CompactUnitFrame_UpdateName: missing",
-        "UnitHealthPercent: yes, UnitHealthMissing: yes, C_CurveUtil: no",
+        "UnitHealthPercent: yes, UnitHealthMissing: yes",
         "enemy health %: hidden, it failed: blocked",
     }) do
         assert(out:find(want, 1, true), "missing '" .. want .. "' in:\n" .. out)

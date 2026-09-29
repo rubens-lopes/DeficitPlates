@@ -144,8 +144,8 @@ local function Status()
     for _, hook in ipairs(HOOKS) do
         print(("  hook %s: %s"):format(hook.name, installed[hook.name] and "installed" or "missing"))
     end
-    print(("  UnitHealthPercent: %s, UnitHealthMissing: %s, C_CurveUtil: %s"):format(
-        Has(UnitHealthPercent), Has(UnitHealthMissing), Has(C_CurveUtil)))
+    print(("  UnitHealthPercent: %s, UnitHealthMissing: %s"):format(
+        Has(UnitHealthPercent), Has(UnitHealthMissing)))
     print("  enemy health %: " .. (Health.percentError and ("hidden, it failed: " .. Health.percentError) or "shown"))
 end
 

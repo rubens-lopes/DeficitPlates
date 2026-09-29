@@ -5,7 +5,7 @@ Status: approved in chat, awaiting review of this document
 
 ## Goal
 
-A World of Warcraft: Forever addon that gives nameplates Plater's default enemy look, applies that same look to friendly plates, and on friendly plates shows **missing health** (for example `-4.2K`) in place of health percentage, because the author plays a healer. It replaces Plater, which has too many settings and is buggy on Forever. It is a sibling of Dynamic Display Nameplate (DDN) and published on CurseForge. It does not depend on DDN: DDN decides when plates show, and Healer Plates decides how they look.
+A World of Warcraft: Forever addon that gives nameplates Plater's default enemy look, applies that same look to friendly plates, and on friendly plates shows **missing health** (for example `-4.2K`, and `-0` at full health) in place of health percentage, because the author plays a healer. It replaces Plater, which has too many settings and is buggy on Forever. It is a sibling of Dynamic Display Nameplate (DDN) and published on CurseForge. It does not depend on DDN: DDN decides when plates show, and Healer Plates decides how they look.
 
 ## Target
 
@@ -82,7 +82,7 @@ The TOC loads `Colors.lua`, `Health.lua`, `Style.lua`, `Core.lua` in that order.
 ### Value text
 
 - **Enemies:** `SetFormattedText("%d%%", UnitHealthPercent(unit, false, CurveConstants.ScaleTo100))`. If that call fails, which we check with `pcall` once per session, fall back to hiding the value text.
-- **Friends:** `SetText("-" .. AbbreviateNumbers(UnitHealthMissing(unit)))`, then `SetAlpha(UnitHealthPercent(unit, false, fullHealthCurve))`. `fullHealthCurve` is built once. It gives 1 from 0 to 0.999 and 0 at 1.0, so the text is invisible at full health.
+- **Friends:** `SetText("-" .. AbbreviateNumbers(UnitHealthMissing(unit)))`, at full alpha. The text always shows, `-0` at full health included (the user asked to drop the full-health fade after trying it on 2026-09-29).
 - **Friendliness** comes from `UnitIsFriend("player", unit)`, which is a plain boolean, re-checked on every update.
 
 ### Heal prediction and absorbs
@@ -124,7 +124,7 @@ A tapped-by-others unit is always grey, whatever the threat.
 
 - `## SavedVariables: HealerPlatesDB`, with one field: `enabled` (default `true`).
 - `/hp-help` lists commands.
-- `/hp-status` prints enabled state, how many plates are styled, whether each hook was installed, whether the value APIs (`UnitHealthPercent`, `UnitHealthMissing`, `C_CurveUtil`) exist, and whether the enemy % fallback kicked in.
+- `/hp-status` prints enabled state, how many plates are styled, whether each hook was installed, whether the value APIs (`UnitHealthPercent`, `UnitHealthMissing`) exist, and whether the enemy % fallback kicked in.
 - `/hp-on` and `/hp-off` set `enabled`, then print "Type /reload to apply." The addon doesn't undo a restyle live.
 
 ## Error handling
@@ -139,10 +139,10 @@ A tapped-by-others unit is always grey, whatever the threat.
 - **WoW stub:** `CreateFrame`, widgets that record calls (`SetText`, `SetFormattedText`, `SetAlpha`, `SetStatusBarColor`, `SetPoint`, `SetFont`), `hooksecurefunc`, a fake `C_NamePlate.GetNamePlateForUnit`, and fake `UnitFrame` objects with the child layout recorded above.
 - **Secret values:** health APIs return a userdata-like object whose metatable raises an error on arithmetic, comparison, `tostring` and concatenation with a non-string. `AbbreviateNumbers` and `UnitHealthPercent` stubs accept it and return tagged values, so tests can assert what reached `SetText`. Any code that touches a health value fails the test.
 - **Blizzard tables are read-only:** fake `UnitFrame` and child tables have a `__newindex` that raises an error. Writing a field onto them fails the test.
-- **Cases:** friendly vs enemy value text; alpha comes from the curve call; each plate is styled once when reused for another unit; the threat × role table; tapped beats threat; class vs reaction colours; missing children are skipped without error; disabled registers nothing; `/hp-on`, `/hp-off` and `/hp-status` output.
+- **Cases:** friendly vs enemy value text; friendly text is always visible; each plate is styled once when reused for another unit; the threat × role table; tapped beats threat; class vs reaction colours; missing children are skipped without error; disabled registers nothing; `/hp-on`, `/hp-off` and `/hp-status` output.
 - **Lint:** luacheck with `std = "lua51"`, the same as DDN.
 
-**Manual in-game checklist before tagging:** enemy and friendly plates look right in the open world; friendly missing health is hidden at full health; heal prediction shows while you cast a heal; threat colours change during a pull; no Lua errors in a 5-minute session; `/hp-off` plus `/reload` gives back Blizzard's look.
+**Manual in-game checklist before tagging:** enemy and friendly plates look right in the open world; friendly missing health shows `-0` at full health; heal prediction shows while you cast a heal; threat colours change during a pull; no Lua errors in a 5-minute session; `/hp-off` plus `/reload` gives back Blizzard's look.
 
 ## Release
 

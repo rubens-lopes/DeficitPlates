@@ -18,7 +18,7 @@ Plater-style nameplates for enemies and friends, with missing health on friendly
 
 ## Description
 
-Healer Plates gives World of Warcraft: Forever nameplates the clean look of Plater's defaults, and uses the same look on friendly plates. On friendly plates, the number on the bar is **missing health** (for example `-4.2K`), so you can see at a glance who needs healing. It shows nothing when someone is at full health.
+Healer Plates gives World of Warcraft: Forever nameplates the clean look of Plater's defaults, and uses the same look on friendly plates. On friendly plates, the number on the bar is **missing health** (for example `-4.2K`), so you can see at a glance who needs healing. Someone at full health shows `-0`.
 
 **What you get**
 

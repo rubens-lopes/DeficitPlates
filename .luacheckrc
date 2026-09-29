@@ -13,7 +13,6 @@ globals = {
 
 read_globals = {
     "AbbreviateNumbers",
-    "C_CurveUtil",
     "C_NamePlate",
     "CreateFrame",
     "CurveConstants",

@@ -1,6 +1,6 @@
 # Healer Plates
 
-A World of Warcraft: Forever addon that gives nameplates Plater's default look, for enemies and friends alike, with one change for healers: friendly plates show **missing health** (`-4.2K`) in place of a percentage, and nothing at full health.
+A World of Warcraft: Forever addon that gives nameplates Plater's default look, for enemies and friends alike, with one change for healers: friendly plates show **missing health** (`-4.2K`) in place of a percentage (`-0` at full health).
 
 - Flat bars with a thin black border, the name above the bar, and the value inside the bar on the right.
 - Enemies: health %, your debuffs, cast bar, and threat colours (yellow when threat is building, orange when you're about to pull aggro, magenta when you have it; tanks get the reverse).
