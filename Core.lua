@@ -5,6 +5,7 @@
 local ADDON_NAME, ns = ...
 local Colors, Health, Style = ns.Colors, ns.Health, ns.Style
 local TITLE = "Healer Plates"
+local TAG = "|cff33ccff" .. TITLE .. ":|r "
 
 -- Our state per Blizzard UnitFrame (value text, border). Weak keys: Blizzard
 -- owns the frames and reuses them for other units.
@@ -12,9 +13,9 @@ local states = setmetatable({}, { __mode = "k" })
 -- Nameplate unit token -> UnitFrame, while that plate is shown.
 local frames = {}
 -- Hook name -> true once installed.
-local installed = {} -- luacheck: ignore 241
+local installed = {}
 local warned = {}
-local running = false -- luacheck: ignore 231
+local running = false
 -- Replaced by the saved table on ADDON_LOADED.
 local settings = { enabled = true }
 
@@ -118,3 +119,49 @@ eventFrame:SetScript("OnEvent", function(_, event, ...)
     end
     EVENTS[event](...)
 end)
+
+local function Say(msg) print(TAG .. msg) end
+
+local function Has(api) return api and "yes" or "no" end
+
+local function Help()
+    Say("commands")
+    print("  /hp-help - show this list")
+    print("  /hp-status - show what the addon found on this client")
+    print("  /hp-on - restyle nameplates (after /reload)")
+    print("  /hp-off - leave Blizzard's nameplates alone (after /reload)")
+end
+
+local function Status()
+    Say(("%s (saved setting: %s)"):format(running and "running" or "not running",
+        settings.enabled and "on" or "off"))
+    local styled, castBars = 0, 0
+    for _, state in pairs(states) do
+        styled = styled + 1
+        if state.castBar then castBars = castBars + 1 end
+    end
+    print(("  plates styled: %d (cast bar found on %d)"):format(styled, castBars))
+    for _, hook in ipairs(HOOKS) do
+        print(("  hook %s: %s"):format(hook.name, installed[hook.name] and "installed" or "missing"))
+    end
+    print(("  UnitHealthPercent: %s, UnitHealthMissing: %s, C_CurveUtil: %s"):format(
+        Has(UnitHealthPercent), Has(UnitHealthMissing), Has(C_CurveUtil)))
+    print("  enemy health %: " .. (Health.percentError and ("hidden, it failed: " .. Health.percentError) or "shown"))
+end
+
+-- The restyle can't be undone live, so both directions need a reload.
+local function Switch(on)
+    return function()
+        settings.enabled = on
+        Say(("turned %s. Type /reload to apply."):format(on and "on" or "off"))
+    end
+end
+
+SLASH_HPHELP1 = "/hp-help"
+SlashCmdList.HPHELP = Help
+SLASH_HPSTATUS1 = "/hp-status"
+SlashCmdList.HPSTATUS = Status
+SLASH_HPON1 = "/hp-on"
+SlashCmdList.HPON = Switch(true)
+SLASH_HPOFF1 = "/hp-off"
+SlashCmdList.HPOFF = Switch(false)

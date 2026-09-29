@@ -403,6 +403,68 @@ test("normal play prints nothing", function()
     eq(#env.printed, 0, "messages printed")
 end)
 
+-- Commands --------------------------------------------------------------------
+
+test("every slash command uses the /hp- prefix", function()
+    local env = Load()
+    local n = 0
+    for k, v in pairs(env.globals) do
+        if type(k) == "string" and k:match("^SLASH_") then
+            n = n + 1
+            assert(v:match("^/hp%-%l+$"), k .. " = " .. v)
+        end
+    end
+    eq(n, 4, "slash commands")
+end)
+
+test("/hp-off and /hp-on save the setting and ask for a reload", function()
+    local env = Load()
+    env.slash("/hp-off")
+    eq(env.globals.HealerPlatesDB.enabled, false, "off")
+    assert(env.printed[#env.printed]:find("Type /reload to apply.", 1, true), env.printed[#env.printed])
+    env.slash("/hp-on")
+    eq(env.globals.HealerPlatesDB.enabled, true, "on")
+    assert(env.printed[#env.printed]:find("turned on", 1, true), env.printed[#env.printed])
+end)
+
+test("/hp-status reports what the addon found on this client", function()
+    local env = Load({ remove = { "CompactUnitFrame_UpdateName", "C_CurveUtil" }, percentError = "blocked" })
+    env.show("nameplate1", ENEMY)
+    env.printed = {}
+    env.slash("/hp-status")
+    local out = table.concat(env.printed, "\n")
+    for _, want in ipairs({
+        "running (saved setting: on)",
+        "plates styled: 1 (cast bar found on 1)",
+        "hook CompactUnitFrame_UpdateHealthColor: installed",
+        "hook CompactUnitFrame_UpdateName: missing",
+        "UnitHealthPercent: yes, UnitHealthMissing: yes, C_CurveUtil: no",
+        "enemy health %: hidden, it failed: blocked",
+    }) do
+        assert(out:find(want, 1, true), "missing '" .. want .. "' in:\n" .. out)
+    end
+end)
+
+test("/hp-status when turned off, and when enemy percent works", function()
+    local env = Load({ saved = { enabled = false } })
+    env.slash("/hp-status")
+    local out = table.concat(env.printed, "\n")
+    assert(out:find("not running (saved setting: off)", 1, true), out)
+    assert(out:find("plates styled: 0", 1, true), out)
+    assert(out:find("enemy health %: shown", 1, true), out)
+end)
+
+test("/hp-help lists every command", function()
+    local env = Load()
+    env.slash("/hp-help")
+    local out = table.concat(env.printed, "\n")
+    for k, v in pairs(env.globals) do
+        if type(k) == "string" and k:match("^SLASH_") then
+            assert(out:find(v, 1, true), "help mentions " .. v)
+        end
+    end
+end)
+
 -- Runner (keep last) ------------------------------------------------------------
 
 T.run(tests)
