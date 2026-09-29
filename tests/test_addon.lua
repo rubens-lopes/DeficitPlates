@@ -246,6 +246,25 @@ test("a plate missing children is styled without errors", function()
     eq(#noName.AurasFrame.points, 0, "auras left alone without a name to anchor to")
 end)
 
+test("a locked or odd child doesn't stop the rest of Apply, and the failure is raised", function()
+    local S = Load().ns.Style
+    local uf = T.Plate().UnitFrame
+    -- A child the client locks, and one that is a different widget type.
+    T.fields(uf).LevelFrame = setmetatable({}, { __index = function()
+        error("cannot be accessed while tainted", 0)
+    end })
+    T.fields(uf).myHealPrediction = {}
+    local state = S.Create(uf)
+    local ok, err = pcall(S.Apply, uf, state)
+    eq(ok, false, "failure is reported")
+    assert(tostring(err):find("tainted", 1, true), tostring(err))
+    eq(uf.ClassificationFrame.alpha, 0, "later hidden frame")
+    eq(uf.otherHealPrediction.texture, T.FLAT, "other prediction textures")
+    eq(T.point(uf.AurasFrame), "BOTTOMLEFT UnitFrame.name TOPLEFT 0 2", "auras anchor")
+    eq(uf.CastBarsContainer.castBar.statusBarTexture, T.FLAT, "cast bar")
+    eq(state.castBar, true, "cast bar found")
+end)
+
 -- Core ------------------------------------------------------------------------
 
 local FRIEND = { friend = true, player = true, class = "MAGE", reaction = 5 }

@@ -46,33 +46,50 @@ function Style.Create(uf)
     return { value = value, border = { top, bottom, left, right } }
 end
 
--- One-time restyle of Blizzard's children.
+-- Restyle of Blizzard's children. Each child is its own step, so a locked
+-- child or one of an unexpected widget type skips only itself; the first
+-- failure is raised after every step has run. Safe to run again.
 function Style.Apply(uf, state)
-    local bar = uf.healthBar
-    if bar then
+    local firstError
+    local function Step(fn)
+        local ok, err = pcall(fn)
+        if not ok and not firstError then firstError = err end
+    end
+    Step(function()
+        local bar = uf.healthBar
+        if not bar then return end
         bar:SetStatusBarTexture(FLAT)
         if bar.bgTexture then
             bar.bgTexture:SetTexture(FLAT)
             bar.bgTexture:SetVertexColor(0, 0, 0, 0.6)
         end
-    end
+    end)
     for _, key in ipairs(HIDDEN) do
-        if uf[key] then uf[key]:SetAlpha(0) end
+        Step(function()
+            if uf[key] then uf[key]:SetAlpha(0) end
+        end)
     end
     for key, c in pairs(PREDICTION) do
-        local texture = uf[key]
-        if texture then
+        Step(function()
+            local texture = uf[key]
+            if not texture then return end
             texture:SetTexture(FLAT)
             texture:SetVertexColor(c[1], c[2], c[3], c[4])
-        end
+        end)
     end
-    if uf.AurasFrame and uf.name then
+    Step(function()
+        if not (uf.AurasFrame and uf.name) then return end
         uf.AurasFrame:ClearAllPoints()
         uf.AurasFrame:SetPoint("BOTTOMLEFT", uf.name, "TOPLEFT", 0, GAP)
-    end
-    local castBar = uf.castBar or (uf.CastBarsContainer and uf.CastBarsContainer.castBar)
-    if castBar then castBar:SetStatusBarTexture(FLAT) end
-    state.castBar = castBar ~= nil
+    end)
+    state.castBar = false
+    Step(function()
+        local castBar = uf.castBar or (uf.CastBarsContainer and uf.CastBarsContainer.castBar)
+        if not castBar then return end
+        state.castBar = true
+        castBar:SetStatusBarTexture(FLAT)
+    end)
+    if firstError then error(firstError, 0) end
 end
 
 -- Name font, colour and position. Runs on every plate update and after
