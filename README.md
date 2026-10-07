@@ -1,5 +1,7 @@
 # Deficit Plates
 
+> **Moved:** this addon is now part of [Dynamic Display Nameplate](https://github.com/rubens-lopes/DynamicDisplayNameplate). Turn on "Missing health on friendly plates" there (`/ddn-deficit on`) and disable Deficit Plates. This repo gets no further updates.
+
 A World of Warcraft: Forever addon for healers. Friendly nameplates show **missing health** (for example `-118`, or `-0` at full health) in place of Blizzard's health number.
 
 That's the only change. Enemy and friendly plates otherwise stay exactly as Blizzard draws them: colours, auras, cast bars, heal prediction and all.

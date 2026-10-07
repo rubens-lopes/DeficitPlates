@@ -119,7 +119,7 @@ end)
 
 test("registers only the events it needs when enabled (the default)", function()
     local env = Load()
-    local want = { "NAME_PLATE_UNIT_ADDED", "NAME_PLATE_UNIT_REMOVED", "UNIT_HEALTH", "UNIT_MAXHEALTH", "UNIT_FACTION" }
+    local want = { "PLAYER_LOGIN", "NAME_PLATE_UNIT_ADDED", "NAME_PLATE_UNIT_REMOVED", "UNIT_HEALTH", "UNIT_MAXHEALTH", "UNIT_FACTION" }
     local n = 0
     for _ in pairs(env.frame.events) do n = n + 1 end
     for _, event in ipairs(want) do eq(env.frame.events[event], true, event) end
@@ -204,6 +204,16 @@ test("normal play prints nothing", function()
     env.fire("UNIT_HEALTH", "nameplate1")
     env.hide("nameplate2")
     eq(#env.printed, 0, "messages printed")
+end)
+
+test("login says the addon moved into Dynamic Display Nameplate, on or off", function()
+    for _, saved in ipairs({ {}, { enabled = false } }) do
+        local env = Load({ saved = saved })
+        env.fire("PLAYER_LOGIN")
+        eq(#env.printed, 1, "messages")
+        assert(env.printed[1]:find("now part of Dynamic Display Nameplate", 1, true), env.printed[1])
+        assert(env.printed[1]:find("/ddn-deficit on", 1, true), env.printed[1])
+    end
 end)
 
 -- Commands --------------------------------------------------------------------

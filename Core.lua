@@ -56,9 +56,18 @@ local EVENTS = {
     UNIT_FACTION = OnUnit,
 }
 
+local MOVED = "Deficit Plates is now part of Dynamic Display Nameplate: turn on "
+    .. "\"Missing health on friendly plates\" there (/ddn-deficit on), then disable this addon. "
+    .. "Until then, this addon keeps working."
+
 local eventFrame = CreateFrame("Frame")
 eventFrame:RegisterEvent("ADDON_LOADED")
+eventFrame:RegisterEvent("PLAYER_LOGIN")
 eventFrame:SetScript("OnEvent", function(_, event, ...)
+    if event == "PLAYER_LOGIN" then
+        print(TAG .. MOVED)
+        return
+    end
     if event == "ADDON_LOADED" then
         if (...) ~= ADDON_NAME then return end
         eventFrame:UnregisterEvent("ADDON_LOADED")
